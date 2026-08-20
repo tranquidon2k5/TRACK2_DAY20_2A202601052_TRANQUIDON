@@ -19,6 +19,9 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import labkit  # noqa: E402
 
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+
 MIN_SCREENSHOTS = 5
 
 # Placeholders left behind by the REFLECTION template.

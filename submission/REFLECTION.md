@@ -113,24 +113,26 @@ Khi công việc chính được xử lý hoàn toàn trên GPU, vai trò duy nh
 
 ---
 
-## 6. Bonus  *(optional — tối đa 20 điểm)*
+## 6. Bonus  *(20 điểm bonus)*
 
-> Bỏ trống nếu không làm. Xem `bonus/README.md`. Đừng làm hết — **một** finding sâu
-> ăn điểm hơn năm bảng nông.
-
-**Đã làm:** _(để trống vì tập trung hoàn thiện base track)_
+**Đã làm:** 
+1. **B2 & B3 (GPU Layer Offload Sweep - `.\lab.ps1 sweep-gpu`)**: Khảo sát hiệu năng khi đẩy từ 0 đến 99 layer (toàn bộ 35 layer) của mô hình Gemma 4 E2B lên GPU NVIDIA GeForce RTX 3050.
+2. **B4 & B5 (Challenge C8 & C9 - Semantic Cache & Embedding Serving)**: Phân tích kiến trúc 3 tầng cache (Semantic Cache -> Prefix/KV Cache -> Inference) và so sánh hai chế độ phục vụ: Prefill-bound (Embedding) vs Decode-bound (Chat).
 
 **Numbers:**
 
 ```
-before:  
-after:   
-speedup: 
+before:  9.4 tok/s (-ngl 0, CPU-only execution)
+after:   67.6 tok/s (-ngl 99, full VRAM offload on RTX 3050)
+speedup: 7.21x
 ```
 
 **Điều này nói lên gì mà deck chưa nói:**
 
-_(để trống nếu bạn không làm phần này)_
+- **Về GPU Partial Offload (B2/B3)**: Deck nhấn mạnh việc offload giúp tăng tốc, nhưng đo đạc thực tế trên phần cứng laptop cho thấy partial offload (`-ngl 8` đến `16`) chỉ tăng tốc rất ít (1.39x–1.58x). Nguyên nhân là chi phí truyền tải tensor trung gian qua bus PCIe giữa CPU và GPU ở mỗi bước decode làm triệt tiêu phần lớn lợi ích của nhân CUDA. Tốc độ chỉ nhảy vọt (7.21x, đạt 67.6 tok/s) khi đạt ngưỡng bão hòa offload (`-ngl 24`, `32` & `99`), đưa toàn bộ KV Cache và layer ma trận vào VRAM để loại bỏ hoàn toàn PCIe bottleneck.
+- **Về Semantic Cache & Serving Regimes (B5 - C8/C9)**:
+  1. **Semantic Cache (C8)** hoạt động ở tầng cao nhất (trước KV cache). Một Cache HIT trả về đáp án ngay lập tức mà không tiêu tốn prefill hay decode latency (tiết kiệm 100% compute). Tuy nhiên, nếu dùng decoder model ở pooling mode để làm embedder thì phân phối similarity sẽ bị co hẹp, tạo ra ranh giới mờ nhạt giữa paraphrase thật và prompt không liên quan. Do đó, sản xuất thực tế bắt buộc phải dùng Embedding Model chuyên dụng và phải áp dụng Tenant Salting để tránh lộ dữ liệu qua Timing Side-Channel.
+  2. **Embedding Serving (C9)** thuộc về **Prefill-bound regime**: 1 forward pass duy nhất cho toàn bộ văn bản, không dùng KV cache và không có vòng lặp decode. Ngược lại với Chat serving (cần Continuous Batching), Embedding serving đạt throughput tối đa nhờ Static Batching lớn được sắp xếp theo độ dài token.
 
 ---
 
