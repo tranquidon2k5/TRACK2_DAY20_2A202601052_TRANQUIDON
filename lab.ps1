@@ -28,8 +28,8 @@ $SysPy  = 'python'
 
 function Need-Venv {
     if (-not (Test-Path $VenvPy)) {
-        Write-Host "ERROR: no virtualenv found at .venv\" -ForegroundColor Red
-        Write-Host "Run this first:  .\lab.ps1 setup"
+        Write-Host 'ERROR: no virtualenv found at .venv/' -ForegroundColor Red
+        Write-Host 'Run this first:  .\lab.ps1 setup'
         exit 1
     }
 }
@@ -44,44 +44,44 @@ function Locust {
 
 switch ($Target) {
     'help' {
-        Write-Host ""
-        Write-Host "Day 20 lab — Windows runner" -ForegroundColor Cyan
-        Write-Host "Usage:  .\lab.ps1 <target>"
-        Write-Host ""
-        Write-Host "Setup (00)"
-        Write-Host "  probe          Probe hardware -> hardware.json"
-        Write-Host "  setup          Install deps + llama.cpp runtime + Gemma 4 E2B"
-        Write-Host "  runtime        Re-fetch just the llama.cpp binaries"
-        Write-Host ""
-        Write-Host "Measure (01)"
-        Write-Host "  bench          TTFT / TPOT / percentiles, both quantizations"
-        Write-Host "  tune           Thread sweep -> your before/after speedup"
-        Write-Host ""
-        Write-Host "Serve (02)"
-        Write-Host "  serve          Start llama-server on :8080 (leave running)"
-        Write-Host "  serve-embed    Embedding server on :8081 (bonus C9)"
-        Write-Host "  smoke          Prove the API + non-zero /metrics"
-        Write-Host "  load-10        Load test, 10 users, 60s"
-        Write-Host "  load-50        Load test, 50 users, 60s"
-        Write-Host "  metrics        Sample /metrics 60s (run WHILE load-50 runs)"
-        Write-Host "  load-report    Saturation reading from both load runs"
-        Write-Host ""
-        Write-Host "Integrate (03)"
-        Write-Host "  pipeline       RAG pipeline -> llama-server"
-        Write-Host ""
-        Write-Host "Submission"
-        Write-Host "  verify         Check submission readiness"
-        Write-Host ""
-        Write-Host "Bonus"
-        Write-Host "  sweep-quant | sweep-ctx | sweep-batch | sweep-gpu"
-        Write-Host "  compare-builds | build-llama | semantic-cache-offline | embed-demo-offline"
-        Write-Host ""
-        Write-Host "Housekeeping"
-        Write-Host "  clean          Remove generated reports"
-        Write-Host "  clean-all      Also remove venv, runtime, models, hardware.json"
-        Write-Host ""
-        Write-Host "You need 3 windows for the 50-user step: serve / load-50 / metrics." -ForegroundColor Yellow
-        Write-Host ""
+        Write-Host ''
+        Write-Host 'Day 20 lab — Windows runner' -ForegroundColor Cyan
+        Write-Host 'Usage:  .\lab.ps1 <target>'
+        Write-Host ''
+        Write-Host 'Setup (00)'
+        Write-Host '  probe          Probe hardware -> hardware.json'
+        Write-Host '  setup          Install deps + llama.cpp runtime + Gemma 4 E2B'
+        Write-Host '  runtime        Re-fetch just the llama.cpp binaries'
+        Write-Host ''
+        Write-Host 'Measure (01)'
+        Write-Host '  bench          TTFT / TPOT / percentiles, both quantizations'
+        Write-Host '  tune           Thread sweep -> your before/after speedup'
+        Write-Host ''
+        Write-Host 'Serve (02)'
+        Write-Host '  serve          Start llama-server on :8080 (leave running)'
+        Write-Host '  serve-embed    Embedding server on :8081 (bonus C9)'
+        Write-Host '  smoke          Prove the API + non-zero /metrics'
+        Write-Host '  load-10        Load test, 10 users, 60s'
+        Write-Host '  load-50        Load test, 50 users, 60s'
+        Write-Host '  metrics        Sample /metrics 60s (run WHILE load-50 runs)'
+        Write-Host '  load-report    Saturation reading from both load runs'
+        Write-Host ''
+        Write-Host 'Integrate (03)'
+        Write-Host '  pipeline       RAG pipeline -> llama-server'
+        Write-Host ''
+        Write-Host 'Submission'
+        Write-Host '  verify         Check submission readiness'
+        Write-Host ''
+        Write-Host 'Bonus'
+        Write-Host '  sweep-quant | sweep-ctx | sweep-batch | sweep-gpu'
+        Write-Host '  compare-builds | build-llama | semantic-cache-offline | embed-demo-offline'
+        Write-Host ''
+        Write-Host 'Housekeeping'
+        Write-Host '  clean          Remove generated reports'
+        Write-Host '  clean-all      Also remove venv, runtime, models, hardware.json'
+        Write-Host ''
+        Write-Host 'You need 3 windows for the 50-user step: serve / load-50 / metrics.' -ForegroundColor Yellow
+        Write-Host ''
     }
 
     'probe'   { & $SysPy labs\00-setup\detect-hardware.py }
@@ -122,11 +122,12 @@ switch ($Target) {
     'build-llama' {
         foreach ($t in 'cmake', 'git') {
             if (-not (Get-Command $t -ErrorAction SilentlyContinue)) {
-                Write-Host "ERROR: $t not found. Install Visual Studio Build Tools + cmake + git." -ForegroundColor Red
+                Write-Host ('ERROR: ' + $t + ' not found. Install Visual Studio Build Tools + cmake + git.') -ForegroundColor Red
                 exit 1
             }
         }
-        $build = & $VenvPy -c "import sys;sys.path.insert(0,'lib');import labkit;print(labkit.LLAMA_CPP_BUILD)"
+        $env:PYTHONPATH = 'lib'
+        $build = & $VenvPy -c 'import labkit; print(labkit.LLAMA_CPP_BUILD)'
         if (-not (Test-Path 'bonus\llama.cpp')) {
             git clone --depth 1 --branch $build https://github.com/ggml-org/llama.cpp bonus\llama.cpp
         }
@@ -134,7 +135,7 @@ switch ($Target) {
         cmake -B bonus\llama.cpp\build -S bonus\llama.cpp @flags -DGGML_NATIVE=ON -DCMAKE_BUILD_TYPE=Release
         cmake --build bonus\llama.cpp\build -j --config Release
         Write-Host ""
-        Write-Host "Built. Now compare it against the prebuilt binary:  .\lab.ps1 compare-builds"
+        Write-Host 'Built. Now compare it against the prebuilt binary:  .\lab.ps1 compare-builds'
     }
 
     'clean' {
@@ -142,7 +143,7 @@ switch ($Target) {
             benchmarks\02-*.md, benchmarks\02-*.json, benchmarks\02-*.csv,
             benchmarks\03-*.md, benchmarks\03-*.json,
             benchmarks\locust-*.csv, benchmarks\bonus-*.md, benchmarks\bonus-*.json
-        Write-Host "Cleaned generated reports. Kept hardware.json, models\, runtime\, submission\."
+        Write-Host 'Cleaned generated reports. Kept hardware.json, models/, runtime/, submission/.'
     }
 
     'clean-all' {
@@ -152,12 +153,12 @@ switch ($Target) {
             benchmarks\locust-*.csv, benchmarks\bonus-*.md, benchmarks\bonus-*.json
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .venv, runtime, models,
             bonus\llama.cpp, hardware.json
-        Write-Host "Removed venv, runtime, models and hardware.json. Re-run: .\lab.ps1 setup"
+        Write-Host 'Removed venv, runtime, models and hardware.json. Re-run: .\lab.ps1 setup'
     }
 
     default {
-        Write-Host "Unknown target: $Target" -ForegroundColor Red
-        Write-Host "Run  .\lab.ps1  with no arguments to list targets."
+        Write-Host ('Unknown target: ' + $Target) -ForegroundColor Red
+        Write-Host 'Run  .\lab.ps1  with no arguments to list targets.'
         exit 1
     }
 }
